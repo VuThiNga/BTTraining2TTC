@@ -31,30 +31,34 @@ class Queue<T> {
     }
     
     func pushSemaphore(_ element: T) {
-        queueConcurrent.async {
-            self.semaphore.wait()
-            self.elements.append(element)
+        self.semaphore.wait()
+        defer {
             self.semaphore.signal()
         }
+        self.elements.append(element)
         
     }
     
     func popSemaphore() -> T? {
-        queueConcurrent.sync {
-            if self.elements.isEmpty {
-                return nil
-            }
-            return self.elements.removeFirst()
+        self.semaphore.wait()
+        defer {
+            self.semaphore.signal()
         }
+        if self.elements.isEmpty {
+            return nil
+        }
+        return self.elements.removeFirst()
     }
     
     func pushLock(_ element: T) {
-        lock.lock(); defer {lock.unlock()}
+        lock.lock()
+        defer {lock.unlock()}
         self.elements.append(element)
     }
     
     func popLock() -> T? {
-        lock.lock(); defer {lock.unlock()}
+        lock.lock()
+        defer {lock.unlock()}
         if self.elements.isEmpty {
             return nil
         }
